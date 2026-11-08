@@ -1,4 +1,4 @@
-
+#pragma once
 
 // gpio pins
 #define GPIO_ENABLE_REG          ((volatile unsigned int *)(0x60004020))

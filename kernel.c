@@ -1,5 +1,7 @@
 #include "hal/registers.h"
 #include "hal/constants.h"
+#include "common.h"
+#include "kernel.h"
 
 // Forward declaration of your actual OS main function
 void kernel_main(void);
@@ -85,14 +87,14 @@ void disable_watchdogs(void) {
     *RTC_CNTL_SWD_WPROTECT_REG = 0;                           // Re-lock
 }
 
-void putchar(char c){
-    *USB_SERIAL_JTAG_EP1_REG = (unsigned int)c;
-}
+// void putchar(char c){
+//     *USB_SERIAL_JTAG_EP1_REG = (unsigned int)c;
+// }
 
-void print(const char* str){
-    while(*str) putchar(*str++);
-    *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
-}
+// void print(const char* str){
+//     while(*str) putchar(*str++);
+//     *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
+// }
 
 void kernel_main(void) {
     disable_watchdogs();
@@ -104,22 +106,9 @@ void kernel_main(void) {
     *GPIO_ENABLE_REG |= (1U << led_gpio);
 
     *GPIO_OUT_REG &= ~(1U << led_gpio);
-    delay_ms(3000);
-    print("LED ON\r\n");
-    *GPIO_OUT_REG |= (1U << led_gpio);
-    delay_ms(1000);
-    print("LED OFF\r\n");
+    delay_ms(5000);
+    printf("LED ON\r\n");
 
-    // 2. Continuous blink loop
-    while (1) {
-        // Clear bit 8 -> Turns LED ON (Active Low)
-        *GPIO_OUT_REG &= ~(1U << led_gpio);
-        print("LED ON\r\n");
-        delay_ms(500);
-
-        // Set bit 8 -> Turns LED OFF
-        *GPIO_OUT_REG |= (1U << led_gpio);
-        print("LED OFF\r\n");
-        delay_ms(500);
-    }
+    PANIC("booted!");
+    printf("unreachable here!\r\n");
 }

@@ -20,7 +20,7 @@ build: $(TARGET).bin
 
 # New line:
 $(TARGET).elf: kernel.c common.ld memory.ld
-	$(CC) $(CFLAGS) -T memory.ld -T common.ld kernel.c -o $(TARGET).elf
+	$(CC) $(CFLAGS) -T memory.ld -T common.ld kernel.c common.c -o $(TARGET).elf
 
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).bin
