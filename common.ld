@@ -33,10 +33,11 @@ SECTIONS
     
     . = ALIGN(4);
     /* Calculate exactly where the data section sits in the binary file */
-    _data_lma = . - ORIGIN(drom);
+    _data_lma_offset = . - ORIGIN(drom);
+    _data_lma = ORIGIN(drom) + _data_lma_offset;
 
     /* 5. RAM: Initialized Data (Lives in Flash, executes in RAM) */
-    .data ORIGIN(ram) : AT(_data_lma)
+    .data ORIGIN(ram) : AT(_data_lma_offset)
     {
         _data_start = .;
         *(.data .data.*)

@@ -21,16 +21,16 @@ extern unsigned int __BSS_END__;
 #define TIMG0_WDTCONFIG0_REG     ((volatile unsigned int *)(0x6001F048))
 #define TIMG0_WDTFEED_REG        ((volatile unsigned int *)(0x6001F060))
 #define TIMG0_WDTWPROTECT_REG    ((volatile unsigned int *)(0x6001F064))
+#define TIMG0_INT_CLR_REG        ((volatile unsigned int *)(0x6001F07C))
 
 // RTC Watchdog (RWDT) registers
-#define RTC_CNTL_WDT_CONFIG0_REG ((volatile unsigned int *)(0x600080A8))
-#define RTC_CNTL_WDT_WPROTECT_REG ((volatile unsigned int *)(0x600080B4))
+#define RTC_CNTL_WDT_CONFIG0_REG ((volatile unsigned int *)(0x60008090))
+#define RTC_CNTL_WDT_WPROTECT_REG ((volatile unsigned int *)(0x600080A8))
 
 // Super Watchdog (SWD) registers — ESP32-C3 has its own separate WPROTECT
-#define RTC_CNTL_SWD_CONF_REG      ((volatile unsigned int *)(0x600080B0))
-#define RTC_CNTL_SWD_WDECFG_REG    ((volatile unsigned int *)(0x600080B8))
-#define RTC_CNTL_SWD_WPROTECT_REG  ((volatile unsigned int *)(0x600080BC))
-#define RTC_CNTL_SWD_WPROTECT_KEY  0x6C2A888A
+#define RTC_CNTL_SWD_CONF_REG      ((volatile unsigned int *)(0x600080AC))
+#define RTC_CNTL_SWD_WPROTECT_REG  ((volatile unsigned int *)(0x600080B0))
+#define RTC_CNTL_SWD_WPROTECT_KEY  0x8F1D312A
 
 // The absolute first C function executed by the hardware
 __attribute__((section(".text.entry"), naked)) void _start(void) {
@@ -81,22 +81,26 @@ void delay_ms(unsigned int ms) {
 }
 
 void disable_watchdogs(void) {
+    const unsigned int rwdt_disable_mask = (1U << 31) | (0xFFFU << 19) | (1U << 12);
+    const unsigned int mwdt_disable_mask = (1U << 31) | (0xFFFU << 23) | (1U << 14);
     // 1. Disable RTC Watchdog (RWDT)
     *RTC_CNTL_WDT_WPROTECT_REG = 0x50D83AA1;  // Unlock RTC write protection
-    *RTC_CNTL_WDT_CONFIG0_REG &= ~(1 << 0);    // Clear WDT_ENABLE bit
+    *RTC_CNTL_WDT_CONFIG0_REG &= ~rwdt_disable_mask;    // Clear WDT_ENABLE bit
     *RTC_CNTL_WDT_WPROTECT_REG = 0;             // Re-lock
 
     // 2. Disable Timer Group 0 Watchdog (MWDT)
     *TIMG0_WDTWPROTECT_REG = 0x50D83AA1;       // Unlock TIMG0 write protection
-    *TIMG0_WDTCONFIG0_REG &= ~(1 << 31);       // Clear WDT_ENABLE bit
+    *TIMG0_WDTFEED_REG = 1;
+    *TIMG0_INT_CLR_REG = (1U << 1);
+    *TIMG0_WDTCONFIG0_REG &= ~mwdt_disable_mask;       // Clear WDT_ENABLE bit
+    *TIMG0_WDTCONFIG0_REG |= (1U << 22);
     *TIMG0_WDTWPROTECT_REG = 0;                // Re-lock
 
     // 3. Disable Super WDT (SWD) — ESP32-C3 has its own separate WPROTECT register
     // The Super WDT timeout is configured by SWD_CONF (bits 0-10).
     // Setting it to 0 disables the timeout entirely.
     *RTC_CNTL_SWD_WPROTECT_REG = RTC_CNTL_SWD_WPROTECT_KEY;  // Unlock SWD
-    *RTC_CNTL_SWD_CONF_REG = 0;                               // Disable SWD timeout
-    *RTC_CNTL_SWD_WDECFG_REG = 0;                             // Clear SWD enable config
+    *RTC_CNTL_SWD_CONF_REG |= (1U << 30);                               // Disable SWD timeout
     *RTC_CNTL_SWD_WPROTECT_REG = 0;                           // Re-lock
 }
 
@@ -104,19 +108,24 @@ void kernel_main(void) {
     disable_watchdogs();
 
     // ESP32-C3 Super Mini: built-in LED is on GPIO8 (PORT0, bit 8)
-    const int led_gpio = 8;
+    const int led_gpio = 3;
 
-    // 1. Enable output mode on GPIO8
+    // 1. Enable output mode on GPIO3
     *GPIO_ENABLE_REG |= (1U << led_gpio);
+
+    *GPIO_OUT_REG |= (1U << led_gpio);
+    delay_ms(3000);
+    *GPIO_OUT_REG &= ~(1U << led_gpio);
+    delay_ms(1000);
 
     // 2. Continuous blink loop
     while (1) {
         // Clear bit 8 -> Turns LED ON (Active Low)
-        *GPIO_OUT_REG &= ~(1U << led_gpio);
+        *GPIO_OUT_REG |= (1U << led_gpio);
         delay_ms(500);
 
         // Set bit 8 -> Turns LED OFF
-        *GPIO_OUT_REG |= (1U << led_gpio);
+        *GPIO_OUT_REG &= ~(1U << led_gpio);
         delay_ms(500);
     }
 }
