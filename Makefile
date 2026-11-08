@@ -4,7 +4,7 @@ OBJCOPY = riscv64-elf-objcopy
 ESPTOOL = esptool.py
 
 # --- Hardware Target Options ---
-PORT    = /dev/ttyUSB0
+PORT    = /dev/ttyACM0
 BAUD    = 921600
 
 # --- Compilation Architecture Flags for ESP32-C3 ---

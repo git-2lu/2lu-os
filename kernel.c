@@ -1,3 +1,6 @@
+#include "hal/registers.h"
+#include "hal/constants.h"
+
 // Forward declaration of your actual OS main function
 void kernel_main(void);
 
@@ -9,24 +12,6 @@ extern unsigned int _data_end;
 extern unsigned int __bss_start;
 extern unsigned int __BSS_END__;
 
-
-#define GPIO_ENABLE_REG          ((volatile unsigned int *)(0x60004020))
-#define GPIO_OUT_REG             ((volatile unsigned int *)(0x60004004))
-
-// --- Memory-Mapped Register Map for Watchdogs (WDT) ---
-#define TIMG_WDTCONFIG0_REG     ((volatile unsigned int *)(0x6001F048))
-#define TIMG_WDTFEED_REG        ((volatile unsigned int *)(0x6001F060))
-#define TIMG_WDTWPROTECT_REG    ((volatile unsigned int *)(0x6001F064))
-#define TIMG_INT_CLR_TIMERS_REG        ((volatile unsigned int *)(0x6001F07C))
-
-// RTC Watchdog (RWDT) registers
-#define RTC_CNTL_WDTCONFIG0_REG ((volatile unsigned int *)(0x60008090))
-#define RTC_CNTL_WDTWPROTECT_REG ((volatile unsigned int *)(0x600080A8))
-
-// Super Watchdog (SWD) registers — ESP32-C3 has its own separate WPROTECT
-#define RTC_CNTL_SWD_CONF_REG      ((volatile unsigned int *)(0x600080AC))
-#define RTC_CNTL_SWD_WPROTECT_REG  ((volatile unsigned int *)(0x600080B0))
-#define RTC_CNTL_SWD_WPROTECT_KEY  0x8F1D312A
 
 // The absolute first C function executed by the hardware
 __attribute__((section(".text.entry"), naked)) void _start(void) {
@@ -100,28 +85,41 @@ void disable_watchdogs(void) {
     *RTC_CNTL_SWD_WPROTECT_REG = 0;                           // Re-lock
 }
 
+void putchar(char c){
+    *USB_SERIAL_JTAG_EP1_REG = (unsigned int)c;
+}
+
+void print(const char* str){
+    while(*str) putchar(*str++);
+    *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
+}
+
 void kernel_main(void) {
     disable_watchdogs();
 
     // ESP32-C3 Super Mini: built-in LED is on GPIO8 (PORT0, bit 8)
-    const int led_gpio = 3;
+    const int led_gpio = 8;
 
     // 1. Enable output mode on GPIO3
     *GPIO_ENABLE_REG |= (1U << led_gpio);
 
-    *GPIO_OUT_REG |= (1U << led_gpio);
-    delay_ms(3000);
     *GPIO_OUT_REG &= ~(1U << led_gpio);
+    delay_ms(3000);
+    print("LED ON\r\n");
+    *GPIO_OUT_REG |= (1U << led_gpio);
     delay_ms(1000);
+    print("LED OFF\r\n");
 
     // 2. Continuous blink loop
     while (1) {
         // Clear bit 8 -> Turns LED ON (Active Low)
-        *GPIO_OUT_REG |= (1U << led_gpio);
+        *GPIO_OUT_REG &= ~(1U << led_gpio);
+        print("LED ON\r\n");
         delay_ms(500);
 
         // Set bit 8 -> Turns LED OFF
-        *GPIO_OUT_REG &= ~(1U << led_gpio);
+        *GPIO_OUT_REG |= (1U << led_gpio);
+        print("LED OFF\r\n");
         delay_ms(500);
     }
 }
