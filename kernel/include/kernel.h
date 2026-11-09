@@ -5,5 +5,6 @@
 #include <common.h>
 #include <constants.h>
 #include <trap.h>
+#include <mem.h>
 
 #endif

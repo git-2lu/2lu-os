@@ -98,18 +98,18 @@ void kernel_main(void) {
     delay_ms(10000);
     printf("Kernel boot finished\r\n");
 
-    printf("testing sys call interface\r\n");
+    // printf("testing sys call interface\r\n");
 
-    delay_ms(500);
+    // delay_ms(500);
 
-    sys_putchar('S');
-    sys_putchar('S');
-    sys_putchar('Y');
-    sys_putchar('S');
-    sys_putchar('\r');
-    sys_putchar('\n');
+    // sys_putchar('S');
+    // sys_putchar('S');
+    // sys_putchar('Y');
+    // sys_putchar('S');
+    // sys_putchar('\r');
+    // sys_putchar('\n');
 
-    sys_print("Hello safely from an isolated application Syscall!\r\n");
+    // sys_print("Hello safely from an isolated application Syscall!\r\n");
     
     
     // *GPIO_OUT_REG |= (1U << led_gpio);
@@ -127,4 +127,26 @@ void kernel_main(void) {
     //     printf("LED OFF\r\n");
     //     delay_ms(100);
     // }
+
+    init_page_allocator();
+
+    printf("Allocating 2 pages dynamically...\r\n");
+    void *ptr1 = alloc_pages(2);
+    printf("Allocated Block 1 Location: 0x%x\r\n", (uint32_t)ptr1);
+
+    printf("Allocating 1 page dynamically...\r\n");
+    void *ptr2 = alloc_pages(1);
+    printf("Allocated Block 2 Location: 0x%x\r\n", (uint32_t)ptr2);
+
+    printf("Freeing Block 1...\r\n");
+    free_pages(ptr1);
+
+    printf("Allocating 1 page again (Should reuse old spot)...\r\n");
+    void *ptr3 = alloc_pages(1);
+    printf("Allocated Block 3 Location: 0x%x\r\n", (uint32_t)ptr3);
+
+    printf("Freeing Block 2...\r\n");
+    free_pages(ptr2);
+    printf("Freeing Block 3...\r\n");
+    free_pages(ptr3);
 }

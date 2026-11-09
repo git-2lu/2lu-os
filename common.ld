@@ -57,6 +57,9 @@ SECTIONS
         __BSS_END__ = .;
     } > ram
 
+    . = ALIGN(4096);
+    __heap_start = .;
+
     /* Required by RISC-V toolchains for global variable optimizations */
     __global_pointer$ = ORIGIN(ram) + 0x800;
 
