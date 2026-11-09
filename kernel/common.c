@@ -26,6 +26,12 @@ void printf(const char *fmt, ...) {
                 case '%': // Print '%'
                     putchar('%');
                     break;
+                case 'c': {
+                    // Fetch character parameter out of the argument packet
+                    char c = (char)va_arg(vargs, int);
+                    putchar(c);
+                    break;
+                }
                 case 's': { // Print a NULL-terminated string.
                     const char *s = va_arg(vargs, const char *);
                     while (*s) {

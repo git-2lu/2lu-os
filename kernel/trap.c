@@ -5,6 +5,27 @@ void handle_trap(struct trap_frame *f) {
     uint32_t mtval = READ_CSR(mtval);
     uint32_t user_pc = READ_CSR(mepc);
 
+    if(mcause == 11){
+        uint32_t syscall_id = f->a7;
+
+        switch(syscall_id){
+            case SYS_PUTCHAR:
+                printf("%c", (char)f->a0);
+                break;
+            case SYS_PRINT:
+                printf((const char*)f->a0);
+                break;
+            
+            default:
+                PANIC("Unknown System Call ID triggered: %d", syscall_id);
+                break;
+        }
+
+        user_pc += 4;
+        WRITE_CSR(mepc, user_pc);
+        return;
+    }
+
     PANIC("unexpected trap mcause=%x, mtval=%x, mepc=%x", mcause, mtval, user_pc);
 }
 

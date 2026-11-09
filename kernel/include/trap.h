@@ -4,6 +4,7 @@
 
 #include <common.h>
 #include <registers.h>
+#include <syscall.h>
 
 struct trap_frame {
     uint32_t ra;

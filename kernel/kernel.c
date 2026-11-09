@@ -86,6 +86,7 @@ void disable_watchdogs(void) {
 
 void kernel_main(void) {
     disable_watchdogs();
+    init_traps();
 
     // ESP32-C3 Super Mini: built-in LED is on GPIO8 (PORT0, bit 8)
     const int led_gpio = 8;
@@ -95,14 +96,28 @@ void kernel_main(void) {
 
     *GPIO_OUT_REG &= ~(1U << led_gpio);
     delay_ms(10000);
-    printf("LED ON\r\n");
+    printf("Kernel boot finished\r\n");
+
+    printf("testing sys call interface\r\n");
+
+    delay_ms(500);
+
+    sys_putchar('S');
+    sys_putchar('S');
+    sys_putchar('Y');
+    sys_putchar('S');
+    sys_putchar('\r');
+    sys_putchar('\n');
+
+    sys_print("Hello safely from an isolated application Syscall!\r\n");
+    
     
     // *GPIO_OUT_REG |= (1U << led_gpio);
     // printf("LED OFF\r\n");
     // delay_ms(1000);
 
-    init_traps();
-    asm volatile ("unimp");
+    // init_traps();
+    // asm volatile ("unimp");
 
     // while(1){
     //     *GPIO_OUT_REG &= ~(1U << led_gpio);
