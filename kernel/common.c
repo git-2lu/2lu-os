@@ -1,7 +1,15 @@
 #include "common.h"
 
 void putchar(char ch){
-    *USB_SERIAL_JTAG_EP1_REG = (unsigned int)ch;
+    #ifdef LOG_MODE_FORGET
+        *USB_SERIAL_JTAG_EP1_REG = (unsigned int)ch; 
+    #else
+        volatile int retry_count = 300;
+        while (((*USB_SERIAL_JTAG_EP1_CONF_REG & (1U << 1)) == 0) && retry_count>0) {
+            retry_count--;
+        }
+        if(retry_count >0) *USB_SERIAL_JTAG_EP1_REG = (unsigned int)ch;
+    #endif
 }
 
 void printf(const char *fmt, ...) {
@@ -52,6 +60,7 @@ void printf(const char *fmt, ...) {
                         unsigned nibble = (value >> (i * 4)) & 0xf;
                         putchar("0123456789abcdef"[nibble]);
                     }
+                    break;
                 }
             }
         } else {
@@ -59,10 +68,21 @@ void printf(const char *fmt, ...) {
         }
 
         fmt++;
+        
     }
-    *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
 
 end:
+    #ifdef LOG_MODE_FORGET
+        *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
+    #else
+        volatile int flush_retry = 300;
+        while (((*USB_SERIAL_JTAG_EP1_CONF_REG & (1U << 1)) == 0) && flush_retry > 0) {
+            flush_retry--;
+        }
+        
+        if(flush_retry > 0) *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
+    #endif
+        
     va_end(vargs);
 }
 

@@ -1,6 +1,3 @@
-#include "hal/registers.h"
-#include "hal/constants.h"
-#include "common.h"
 #include "kernel.h"
 
 // Forward declaration of your actual OS main function
@@ -87,15 +84,6 @@ void disable_watchdogs(void) {
     *RTC_CNTL_SWD_WPROTECT_REG = 0;                           // Re-lock
 }
 
-// void putchar(char c){
-//     *USB_SERIAL_JTAG_EP1_REG = (unsigned int)c;
-// }
-
-// void print(const char* str){
-//     while(*str) putchar(*str++);
-//     *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
-// }
-
 void kernel_main(void) {
     disable_watchdogs();
 
@@ -106,9 +94,22 @@ void kernel_main(void) {
     *GPIO_ENABLE_REG |= (1U << led_gpio);
 
     *GPIO_OUT_REG &= ~(1U << led_gpio);
-    delay_ms(5000);
+    delay_ms(10000);
     printf("LED ON\r\n");
+    
+    // *GPIO_OUT_REG |= (1U << led_gpio);
+    // printf("LED OFF\r\n");
+    // delay_ms(1000);
 
-    PANIC("booted!");
-    printf("unreachable here!\r\n");
+    init_traps();
+    asm volatile ("unimp");
+
+    // while(1){
+    //     *GPIO_OUT_REG &= ~(1U << led_gpio);
+    //     printf("LED ON\r\n");
+    //     delay_ms(100);
+    //     *GPIO_OUT_REG |= (1U << led_gpio);
+    //     printf("LED OFF\r\n");
+    //     delay_ms(100);
+    // }
 }

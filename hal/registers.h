@@ -1,3 +1,6 @@
+#ifndef REGISTERS_H
+#define REGISTERS_H
+
 #pragma once
 
 // gpio pins
@@ -21,3 +24,5 @@
 // jtag registors
 #define USB_SERIAL_JTAG_EP1_REG ((volatile unsigned int *)(0x60043000))
 #define USB_SERIAL_JTAG_EP1_CONF_REG ((volatile unsigned int *)(0x60043004))
+
+#endif
