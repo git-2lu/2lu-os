@@ -84,6 +84,39 @@ void disable_watchdogs(void) {
     *RTC_CNTL_SWD_WPROTECT_REG = 0;                           // Re-lock
 }
 
+static uint8_t user_stack[2048] __attribute__((aligned(16)));
+
+void user_main(void){
+
+    sys_putchar('S');
+    sys_putchar('S');
+    sys_putchar('Y');
+    sys_putchar('S');
+    sys_putchar('\r');
+    sys_putchar('\n');
+    sys_print("Hello safely from an isolated application Syscall!\r\n");
+    while(1){};
+}
+
+static void setup_pmp(void){
+    WRITE_CSR(pmpaddr0, 0xFFFFFFFF);
+    WRITE_CSR(pmpcfg0, 0x0F);
+    printf("pmpcfg0=0x%x pmpaddr0=0x%x\r\n", READ_CSR(pmpcfg0), READ_CSR(pmpaddr0));
+}
+
+__attribute__((noreturn)) static void enter_user_mode(void(*entry)(void), void *stack_top){
+    uint32_t mstatus = READ_CSR(mstatus);
+    mstatus &= ~(3U << 11);
+    WRITE_CSR(mstatus, mstatus);
+    WRITE_CSR(mepc, (uint32_t)entry);
+    asm volatile(
+        "mv sp, %0\n"
+        "mret\n"
+        : : "r"(stack_top) : "memory"
+    );
+    __builtin_unreachable();
+}
+
 void kernel_main(void) {
     disable_watchdogs();
     init_traps();
@@ -128,25 +161,28 @@ void kernel_main(void) {
     //     delay_ms(100);
     // }
 
-    init_page_allocator();
+    // init_page_allocator();
 
-    printf("Allocating 2 pages dynamically...\r\n");
-    void *ptr1 = alloc_pages(2);
-    printf("Allocated Block 1 Location: 0x%x\r\n", (uint32_t)ptr1);
+    // printf("Allocating 2 pages dynamically...\r\n");
+    // void *ptr1 = alloc_pages(2);
+    // printf("Allocated Block 1 Location: 0x%x\r\n", (uint32_t)ptr1);
 
-    printf("Allocating 1 page dynamically...\r\n");
-    void *ptr2 = alloc_pages(1);
-    printf("Allocated Block 2 Location: 0x%x\r\n", (uint32_t)ptr2);
+    // printf("Allocating 1 page dynamically...\r\n");
+    // void *ptr2 = alloc_pages(1);
+    // printf("Allocated Block 2 Location: 0x%x\r\n", (uint32_t)ptr2);
 
-    printf("Freeing Block 1...\r\n");
-    free_pages(ptr1);
+    // printf("Freeing Block 1...\r\n");
+    // free_pages(ptr1);
 
-    printf("Allocating 1 page again (Should reuse old spot)...\r\n");
-    void *ptr3 = alloc_pages(1);
-    printf("Allocated Block 3 Location: 0x%x\r\n", (uint32_t)ptr3);
+    // printf("Allocating 1 page again (Should reuse old spot)...\r\n");
+    // void *ptr3 = alloc_pages(1);
+    // printf("Allocated Block 3 Location: 0x%x\r\n", (uint32_t)ptr3);
 
-    printf("Freeing Block 2...\r\n");
-    free_pages(ptr2);
-    printf("Freeing Block 3...\r\n");
-    free_pages(ptr3);
+    // printf("Freeing Block 2...\r\n");
+    // free_pages(ptr2);
+    // printf("Freeing Block 3...\r\n");
+    // free_pages(ptr3);
+
+    setup_pmp();
+    enter_user_mode(user_main, user_stack + sizeof(user_stack));
 }

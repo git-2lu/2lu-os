@@ -21,3 +21,15 @@ void sys_print(const char *str) {
         : "a0", "a7", "memory"
     );
 }
+
+
+void sys_exit(int code){
+    asm volatile(
+        "li a7, %0\n"
+        "mv a0, %1\n"
+        "ecall\n"
+        :
+        : "i"(SYS_EXIT), "r"(code)
+        : "a0", "a7", "memory"
+    );
+}

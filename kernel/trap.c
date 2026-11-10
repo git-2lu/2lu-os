@@ -5,7 +5,7 @@ void handle_trap(struct trap_frame *f) {
     uint32_t mtval = READ_CSR(mtval);
     uint32_t user_pc = READ_CSR(mepc);
 
-    if(mcause == 11){
+    if(mcause == 8){
         uint32_t syscall_id = f->a7;
 
         switch(syscall_id){

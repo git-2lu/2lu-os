@@ -4,7 +4,7 @@ void putchar(char ch){
     #ifdef LOG_MODE_FORGET
         *USB_SERIAL_JTAG_EP1_REG = (unsigned int)ch; 
     #else
-        volatile int retry_count = 300;
+        volatile int retry_count = 3000;
         while (((*USB_SERIAL_JTAG_EP1_CONF_REG & (1U << 1)) == 0) && retry_count>0) {
             retry_count--;
         }
@@ -81,7 +81,7 @@ end:
     #ifdef LOG_MODE_FORGET
         *USB_SERIAL_JTAG_EP1_CONF_REG = (1U << 0);
     #else
-        volatile int flush_retry = 300;
+        volatile int flush_retry = 3000;
         while (((*USB_SERIAL_JTAG_EP1_CONF_REG & (1U << 1)) == 0) && flush_retry > 0) {
             flush_retry--;
         }
